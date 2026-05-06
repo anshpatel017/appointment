@@ -1,5 +1,8 @@
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'package:path/path.dart';
+import 'package:flutter/foundation.dart';
 import '../models/appointment.dart';
 import '../models/user.dart';
 import '../utils/constants.dart';
@@ -18,6 +21,17 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
+    if (kIsWeb) {
+      databaseFactory = databaseFactoryFfiWeb;
+      final path = 'appointments_web.db';
+      return await openDatabase(path, version: 3, onCreate: _onCreate, onUpgrade: _onUpgrade);
+    } else if (defaultTargetPlatform == TargetPlatform.windows || 
+               defaultTargetPlatform == TargetPlatform.linux || 
+               defaultTargetPlatform == TargetPlatform.macOS) {
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
+    }
+
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'appointments.db');
     return await openDatabase(path, version: 3, onCreate: _onCreate, onUpgrade: _onUpgrade);
