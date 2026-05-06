@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'utils/constants.dart';
 import 'utils/theme.dart';
+import 'providers/appointment_provider.dart';
+import 'providers/queue_provider.dart';
+import 'providers/admin_provider.dart';
 import 'screens/booking_screen.dart';
 import 'screens/queue_status_screen.dart';
 import 'screens/appointment_list_screen.dart';
@@ -17,11 +21,18 @@ class SmartAppointmentApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Smart Appointment',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      home: const MainNavigation(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AppointmentProvider()),
+        ChangeNotifierProvider(create: (_) => QueueProvider()),
+        ChangeNotifierProvider(create: (_) => AdminProvider()),
+      ],
+      child: MaterialApp(
+        title: 'Smart Appointment',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.darkTheme,
+        home: const MainNavigation(),
+      ),
     );
   }
 }
@@ -42,6 +53,17 @@ class _MainNavigationState extends State<MainNavigation> {
     AppointmentListScreen(),
     AdminDashboardScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Load initial data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AppointmentProvider>().loadAppointments();
+      context.read<QueueProvider>().loadTodayQueue();
+      context.read<AdminProvider>().loadDashboard();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

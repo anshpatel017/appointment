@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../models/appointment.dart';
+import '../providers/appointment_provider.dart';
 import '../utils/constants.dart';
 import '../widgets/appointment_card.dart';
 
@@ -18,11 +20,31 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
   DateTime? _filterDate;
   List<Appointment> _results = [];
   bool _hasSearched = false;
+  bool _isSearching = false;
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _performSearch() async {
+    setState(() {
+      _isSearching = true;
+      _hasSearched = true;
+    });
+
+    final results = await context.read<AppointmentProvider>().searchAndFilter(
+      query: _searchController.text.trim().isNotEmpty ? _searchController.text.trim() : null,
+      date: _filterDate != null ? DateFormat('yyyy-MM-dd').format(_filterDate!) : null,
+      status: _filterStatus,
+      serviceType: _filterService,
+    );
+
+    setState(() {
+      _results = results;
+      _isSearching = false;
+    });
   }
 
   void _clearFilters() {
@@ -57,14 +79,12 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
     );
     if (picked != null) {
       setState(() => _filterDate = picked);
+      _performSearch();
     }
   }
 
   bool get _hasActiveFilters =>
-      _searchController.text.isNotEmpty ||
-      _filterStatus != null ||
-      _filterService != null ||
-      _filterDate != null;
+      _searchController.text.isNotEmpty || _filterStatus != null || _filterService != null || _filterDate != null;
 
   @override
   Widget build(BuildContext context) {
@@ -91,14 +111,12 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
               decoration: InputDecoration(
                 hintText: 'Search by name or appointment ID...',
                 prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textMuted),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.close_rounded, color: AppColors.textMuted, size: 20),
-                        onPressed: () => setState(() => _searchController.clear()),
-                      )
-                    : null,
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.arrow_forward_rounded, color: AppColors.primary),
+                  onPressed: _performSearch,
+                ),
               ),
-              onChanged: (val) => setState(() {}),
+              onSubmitted: (_) => _performSearch(),
             ),
           ),
 
@@ -108,33 +126,30 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                // Date filter
                 _filterChip(
                   icon: Icons.calendar_today_rounded,
                   label: _filterDate != null ? DateFormat('MMM dd').format(_filterDate!) : 'Date',
                   isActive: _filterDate != null,
                   onTap: _pickFilterDate,
-                  onClear: () => setState(() => _filterDate = null),
+                  onClear: () { setState(() => _filterDate = null); _performSearch(); },
                 ),
                 const SizedBox(width: 8),
-                // Status filter
                 _filterDropdown(
                   icon: Icons.flag_rounded,
                   label: _filterStatus ?? 'Status',
                   isActive: _filterStatus != null,
                   items: AppointmentStatus.all,
-                  onSelected: (val) => setState(() => _filterStatus = val),
-                  onClear: () => setState(() => _filterStatus = null),
+                  onSelected: (val) { setState(() => _filterStatus = val); _performSearch(); },
+                  onClear: () { setState(() => _filterStatus = null); _performSearch(); },
                 ),
                 const SizedBox(width: 8),
-                // Service filter
                 _filterDropdown(
                   icon: Icons.medical_services_rounded,
                   label: _filterService ?? 'Service',
                   isActive: _filterService != null,
                   items: ServiceTypes.all,
-                  onSelected: (val) => setState(() => _filterService = val),
-                  onClear: () => setState(() => _filterService = null),
+                  onSelected: (val) { setState(() => _filterService = val); _performSearch(); },
+                  onClear: () { setState(() => _filterService = null); _performSearch(); },
                 ),
               ],
             ),
@@ -144,32 +159,33 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
 
           // Results
           Expanded(
-            child: _results.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _hasSearched ? Icons.search_off_rounded : Icons.search_rounded,
-                          color: AppColors.textMuted,
-                          size: 48,
+            child: _isSearching
+                ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                : _results.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _hasSearched ? Icons.search_off_rounded : Icons.search_rounded,
+                              color: AppColors.textMuted, size: 48,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _hasSearched ? 'No results found' : 'Search or apply filters\nto find appointments',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: AppColors.textMuted, fontSize: 15),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          _hasSearched ? 'No results found' : 'Search or apply filters\nto find appointments',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: AppColors.textMuted, fontSize: 15),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.only(top: 8, bottom: 24),
-                    itemCount: _results.length,
-                    itemBuilder: (context, index) {
-                      return AppointmentCard(appointment: _results[index]);
-                    },
-                  ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.only(top: 8, bottom: 24),
+                        itemCount: _results.length,
+                        itemBuilder: (context, index) {
+                          return AppointmentCard(appointment: _results[index]);
+                        },
+                      ),
           ),
         ],
       ),
@@ -177,11 +193,8 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
   }
 
   Widget _filterChip({
-    required IconData icon,
-    required String label,
-    required bool isActive,
-    required VoidCallback onTap,
-    required VoidCallback onClear,
+    required IconData icon, required String label, required bool isActive,
+    required VoidCallback onTap, required VoidCallback onClear,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -200,10 +213,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
             Text(label, style: TextStyle(color: isActive ? AppColors.primary : AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
             if (isActive) ...[
               const SizedBox(width: 4),
-              GestureDetector(
-                onTap: onClear,
-                child: const Icon(Icons.close_rounded, color: AppColors.primary, size: 14),
-              ),
+              GestureDetector(onTap: onClear, child: const Icon(Icons.close_rounded, color: AppColors.primary, size: 14)),
             ],
           ],
         ),
@@ -212,12 +222,8 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
   }
 
   Widget _filterDropdown({
-    required IconData icon,
-    required String label,
-    required bool isActive,
-    required List<String> items,
-    required ValueChanged<String> onSelected,
-    required VoidCallback onClear,
+    required IconData icon, required String label, required bool isActive,
+    required List<String> items, required ValueChanged<String> onSelected, required VoidCallback onClear,
   }) {
     return PopupMenuButton<String>(
       onSelected: onSelected,
@@ -241,10 +247,7 @@ class _SearchFilterScreenState extends State<SearchFilterScreen> {
             Text(label, style: TextStyle(color: isActive ? AppColors.primary : AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
             const SizedBox(width: 4),
             if (isActive)
-              GestureDetector(
-                onTap: onClear,
-                child: const Icon(Icons.close_rounded, color: AppColors.primary, size: 14),
-              )
+              GestureDetector(onTap: onClear, child: const Icon(Icons.close_rounded, color: AppColors.primary, size: 14))
             else
               const Icon(Icons.arrow_drop_down_rounded, color: AppColors.textMuted, size: 18),
           ],

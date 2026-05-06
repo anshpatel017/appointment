@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../providers/appointment_provider.dart';
+import '../providers/queue_provider.dart';
+import '../providers/admin_provider.dart';
 import '../utils/constants.dart';
 import '../widgets/time_slot_picker.dart';
 
@@ -16,7 +20,7 @@ class _BookingScreenState extends State<BookingScreen> {
   String? _selectedService;
   DateTime? _selectedDate;
   String? _selectedTimeSlot;
-  final Set<String> _unavailableSlots = {};
+  Set<String> _unavailableSlots = {};
   bool _isLoading = false;
 
   @override
@@ -50,10 +54,14 @@ class _BookingScreenState extends State<BookingScreen> {
         _selectedDate = picked;
         _selectedTimeSlot = null;
       });
+      // Check which slots are unavailable
+      final dateStr = DateFormat('yyyy-MM-dd').format(picked);
+      final unavailable = await context.read<AppointmentProvider>().getUnavailableSlots(dateStr);
+      setState(() => _unavailableSlots = unavailable);
     }
   }
 
-  void _submitBooking() {
+  Future<void> _submitBooking() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDate == null) {
       _showSnackBar('Please select a date', isError: true);
@@ -63,8 +71,29 @@ class _BookingScreenState extends State<BookingScreen> {
       _showSnackBar('Please select a time slot', isError: true);
       return;
     }
-    // Booking logic will be wired in Phase 3
-    _showSuccessDialog();
+
+    setState(() => _isLoading = true);
+
+    final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate!);
+    final result = await context.read<AppointmentProvider>().bookAppointment(
+      name: _nameController.text.trim(),
+      serviceType: _selectedService!,
+      date: dateStr,
+      timeSlot: _selectedTimeSlot!,
+    );
+
+    setState(() => _isLoading = false);
+
+    if (result['success'] == true) {
+      // Refresh queue and admin data
+      if (mounted) {
+        context.read<QueueProvider>().loadTodayQueue();
+        context.read<AdminProvider>().loadDashboard();
+      }
+      _showSuccessDialog(result['appointment']);
+    } else {
+      _showSnackBar(result['message'] ?? 'Booking failed', isError: true);
+    }
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -88,7 +117,7 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  void _showSuccessDialog() {
+  void _showSuccessDialog(dynamic appointment) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -111,11 +140,24 @@ class _BookingScreenState extends State<BookingScreen> {
               style: TextStyle(color: AppColors.textPrimary, fontSize: 20, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
-            Text(
-              '${_nameController.text}\n$_selectedService\n${DateFormat('MMM dd, yyyy').format(_selectedDate!)}\n$_selectedTimeSlot',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
-            ),
+            if (appointment != null)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceBg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  children: [
+                    _detailRow('ID', '#${appointment.shortId}'),
+                    _detailRow('Name', appointment.name),
+                    _detailRow('Service', appointment.serviceType),
+                    _detailRow('Date', appointment.date),
+                    _detailRow('Time', appointment.timeSlot),
+                    _detailRow('Queue', '#${appointment.queuePosition}'),
+                  ],
+                ),
+              ),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
@@ -133,6 +175,19 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+          Text(value, style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
   void _resetForm() {
     _formKey.currentState?.reset();
     _nameController.clear();
@@ -140,6 +195,7 @@ class _BookingScreenState extends State<BookingScreen> {
       _selectedService = null;
       _selectedDate = null;
       _selectedTimeSlot = null;
+      _unavailableSlots = {};
     });
   }
 
@@ -187,7 +243,7 @@ class _BookingScreenState extends State<BookingScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Name field
+              // Name
               const Text('Full Name', style: TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               TextFormField(
@@ -222,7 +278,7 @@ class _BookingScreenState extends State<BookingScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Date picker
+              // Date
               const Text('Appointment Date', style: TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               GestureDetector(
@@ -253,7 +309,7 @@ class _BookingScreenState extends State<BookingScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Time slot picker
+              // Time slots
               TimeSlotPicker(
                 selectedSlot: _selectedTimeSlot,
                 unavailableSlots: _unavailableSlots,
@@ -261,7 +317,7 @@ class _BookingScreenState extends State<BookingScreen> {
               ),
               const SizedBox(height: 32),
 
-              // Submit button
+              // Submit
               SizedBox(
                 width: double.infinity,
                 height: 54,
