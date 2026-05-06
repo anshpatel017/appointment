@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/admin_provider.dart';
 import '../providers/queue_provider.dart';
+import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
 import '../widgets/appointment_card.dart';
 
@@ -25,6 +26,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               context.read<AdminProvider>().loadDashboard();
               context.read<QueueProvider>().loadTodayQueue();
             },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, color: AppColors.cancelled),
+            onPressed: () => context.read<AuthProvider>().logout(),
           ),
         ],
       ),
@@ -174,14 +179,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       appointment: todayQueue[i],
                       showActions: true,
                       onComplete: () => _confirmAction(
-                        'Complete this appointment?',
+                        todayQueue[i].status == AppointmentStatus.scheduled 
+                            ? 'Accept this appointment?' 
+                            : 'Complete this appointment?',
                         () async {
                           await admin.markCompleted(todayQueue[i].id);
                           if (context.mounted) context.read<QueueProvider>().loadTodayQueue();
                         },
                       ),
                       onCancel: () => _confirmAction(
-                        'Cancel this appointment?',
+                        todayQueue[i].status == AppointmentStatus.scheduled 
+                            ? 'Reject this appointment?' 
+                            : 'Cancel this appointment?',
                         () async {
                           await admin.cancelAppointment(todayQueue[i].id);
                           if (context.mounted) context.read<QueueProvider>().loadTodayQueue();

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/appointment_provider.dart';
 import '../providers/queue_provider.dart';
 import '../providers/admin_provider.dart';
+import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
 import '../widgets/time_slot_picker.dart';
 
@@ -204,6 +205,12 @@ class _BookingScreenState extends State<BookingScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Book Appointment', style: TextStyle(fontWeight: FontWeight.w700)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, color: AppColors.cancelled),
+            onPressed: () => context.read<AuthProvider>().logout(),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

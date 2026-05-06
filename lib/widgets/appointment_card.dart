@@ -109,8 +109,10 @@ class AppointmentCard extends StatelessWidget {
                   if (appointment.status == AppointmentStatus.scheduled || appointment.status == AppointmentStatus.inProgress)
                     Expanded(
                       child: _actionButton(
-                        icon: Icons.check_circle_outline_rounded,
-                        label: 'Complete',
+                        icon: appointment.status == AppointmentStatus.scheduled 
+                              ? Icons.thumb_up_alt_outlined 
+                              : Icons.check_circle_outline_rounded,
+                        label: appointment.status == AppointmentStatus.scheduled ? 'Accept' : 'Complete',
                         color: AppColors.completed,
                         onTap: onComplete,
                       ),
@@ -119,8 +121,10 @@ class AppointmentCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: _actionButton(
-                        icon: Icons.cancel_outlined,
-                        label: 'Cancel',
+                        icon: appointment.status == AppointmentStatus.scheduled
+                              ? Icons.thumb_down_alt_outlined
+                              : Icons.cancel_outlined,
+                        label: appointment.status == AppointmentStatus.scheduled ? 'Reject' : 'Cancel',
                         color: AppColors.cancelled,
                         onTap: onCancel,
                       ),

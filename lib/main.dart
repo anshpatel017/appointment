@@ -5,11 +5,13 @@ import 'utils/theme.dart';
 import 'providers/appointment_provider.dart';
 import 'providers/queue_provider.dart';
 import 'providers/admin_provider.dart';
+import 'providers/auth_provider.dart';
 import 'screens/booking_screen.dart';
 import 'screens/queue_status_screen.dart';
 import 'screens/appointment_list_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
 import 'screens/search_filter_screen.dart';
+import 'screens/login_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +25,7 @@ class SmartAppointmentApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => AppointmentProvider()),
         ChangeNotifierProvider(create: (_) => QueueProvider()),
         ChangeNotifierProvider(create: (_) => AdminProvider()),
@@ -30,10 +33,25 @@ class SmartAppointmentApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Smart Appointment',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
-        home: const MainNavigation(),
+        theme: AppTheme.lightTheme,
+        home: const AuthWrapper(),
       ),
     );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+
+    if (!authProvider.isAuthenticated) {
+      return const LoginScreen();
+    }
+
+    return const MainNavigation();
   }
 }
 
@@ -47,13 +65,6 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    BookingScreen(),
-    QueueStatusScreen(),
-    AppointmentListScreen(),
-    AdminDashboardScreen(),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -61,16 +72,36 @@ class _MainNavigationState extends State<MainNavigation> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AppointmentProvider>().loadAppointments();
       context.read<QueueProvider>().loadTodayQueue();
-      context.read<AdminProvider>().loadDashboard();
+      if (context.read<AuthProvider>().isDoctor) {
+        context.read<AdminProvider>().loadDashboard();
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDoctor = context.watch<AuthProvider>().isDoctor;
+
+    final List<Widget> screens = isDoctor
+        ? const [
+            AdminDashboardScreen(),
+            QueueStatusScreen(),
+          ]
+        : const [
+            BookingScreen(),
+            QueueStatusScreen(),
+            AppointmentListScreen(),
+          ];
+
+    // Reset index if role changes and index is out of bounds
+    if (_currentIndex >= screens.length) {
+      _currentIndex = 0;
+    }
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
-        children: _screens,
+        children: screens,
       ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
@@ -79,37 +110,47 @@ class _MainNavigationState extends State<MainNavigation> {
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (i) => setState(() => _currentIndex = i),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.add_circle_outline_rounded),
-              activeIcon: Icon(Icons.add_circle_rounded),
-              label: 'Book',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.queue_rounded),
-              activeIcon: Icon(Icons.queue_rounded),
-              label: 'Queue',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.list_alt_rounded),
-              activeIcon: Icon(Icons.list_alt_rounded),
-              label: 'My Appts',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.admin_panel_settings_outlined),
-              activeIcon: Icon(Icons.admin_panel_settings_rounded),
-              label: 'Admin',
-            ),
-          ],
+          items: isDoctor
+              ? const [
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.admin_panel_settings_outlined),
+                    activeIcon: Icon(Icons.admin_panel_settings_rounded),
+                    label: 'Dashboard',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.queue_rounded),
+                    activeIcon: Icon(Icons.queue_rounded),
+                    label: 'Queue',
+                  ),
+                ]
+              : const [
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.add_circle_outline_rounded),
+                    activeIcon: Icon(Icons.add_circle_rounded),
+                    label: 'Book',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.queue_rounded),
+                    activeIcon: Icon(Icons.queue_rounded),
+                    label: 'Queue',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.list_alt_rounded),
+                    activeIcon: Icon(Icons.list_alt_rounded),
+                    label: 'My Appts',
+                  ),
+                ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.small(
-        onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchFilterScreen()));
-        },
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.search_rounded, color: Colors.white),
-      ),
+      floatingActionButton: isDoctor
+          ? FloatingActionButton.small(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchFilterScreen()));
+              },
+              backgroundColor: AppColors.primary,
+              child: const Icon(Icons.search_rounded, color: Colors.white),
+            )
+          : null,
     );
   }
 }

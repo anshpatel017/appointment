@@ -63,24 +63,24 @@ class AppColors {
   static const Color accentLight = Color(0xFF5EFFD4);
 
   // Background
-  static const Color scaffoldBg = Color(0xFF0F0E17);
-  static const Color cardBg = Color(0xFF1A1932);
-  static const Color surfaceBg = Color(0xFF232147);
+  static const Color scaffoldBg = Color(0xFFF4F6F9); // Light grayish white
+  static const Color cardBg = Color(0xFFFFFFFF); // Pure white
+  static const Color surfaceBg = Color(0xFFF9FAFC); // Very light gray for surfaces
 
   // Status colors
-  static const Color scheduled = Color(0xFF5B8DEF);
-  static const Color inProgress = Color(0xFFFFB84D);
-  static const Color completed = Color(0xFF4ADE80);
-  static const Color cancelled = Color(0xFFFF6B6B);
+  static const Color scheduled = Color(0xFF3B82F6); // Brighter blue
+  static const Color inProgress = Color(0xFFF59E0B); // Amber/orange
+  static const Color completed = Color(0xFF10B981); // Green
+  static const Color cancelled = Color(0xFFEF4444); // Red
 
   // Text
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFFB0AECF);
-  static const Color textMuted = Color(0xFF6B6893);
+  static const Color textPrimary = Color(0xFF1E293B); // Dark slate
+  static const Color textSecondary = Color(0xFF475569); // Slate gray
+  static const Color textMuted = Color(0xFF94A3B8); // Light gray
 
   // Misc
-  static const Color divider = Color(0xFF2E2B54);
-  static const Color shimmer = Color(0xFF3D3A6E);
+  static const Color divider = Color(0xFFE2E8F0); // Light border color
+  static const Color shimmer = Color(0xFFE2E8F0);
 
   static Color statusColor(String status) {
     switch (status) {

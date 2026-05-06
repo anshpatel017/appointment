@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/appointment.dart';
+import '../models/user.dart';
 import '../utils/constants.dart';
 
 class DatabaseHelper {
@@ -19,7 +20,21 @@ class DatabaseHelper {
   Future<Database> _initDatabase() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'appointments.db');
-    return await openDatabase(path, version: 1, onCreate: _onCreate);
+    return await openDatabase(path, version: 3, onCreate: _onCreate, onUpgrade: _onUpgrade);
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 3) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          email TEXT NOT NULL UNIQUE,
+          password TEXT NOT NULL,
+          role TEXT NOT NULL
+        )
+      ''');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -36,6 +51,15 @@ class DatabaseHelper {
         is_synced INTEGER NOT NULL DEFAULT 0
       )
     ''');
+    await db.execute('''
+      CREATE TABLE users (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL
+      )
+    ''');
     await db.execute('CREATE INDEX idx_date ON appointments(date)');
     await db.execute('CREATE INDEX idx_status ON appointments(status)');
   }
@@ -47,7 +71,22 @@ class DatabaseHelper {
         conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  // ─── READ ───────────────────────────────────────────────
+  // ─── AUTHENTICATION ─────────────────────────────────────
+  Future<AppUser?> loginUser(String email, String password) async {
+    final db = await database;
+    final maps = await db.query('users',
+        where: 'email = ? AND password = ?', whereArgs: [email, password]);
+    if (maps.isEmpty) return null;
+    return AppUser.fromMap(maps.first);
+  }
+
+  Future<int> registerUser(AppUser user) async {
+    final db = await database;
+    return await db.insert('users', user.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.abort);
+  }
+
+  // ─── CREATE ─────────────────────────────────────────────
   Future<List<Appointment>> getAllAppointments() async {
     final db = await database;
     final maps = await db.query('appointments', orderBy: 'date ASC, time_slot ASC');
