@@ -22,9 +22,15 @@ class DatabaseHelper {
 
   Future<Database> _initDatabase() async {
     if (kIsWeb) {
-      databaseFactory = databaseFactoryFfiWeb;
-      final path = 'appointments_web.db';
-      return await openDatabase(path, version: 3, onCreate: _onCreate, onUpgrade: _onUpgrade);
+      // Use the web factory for persistence
+      var factory = databaseFactoryFfiWeb;
+      databaseFactory = factory;
+      final path = 'appointments_persistent.db';
+      return await factory.openDatabase(path, options: OpenDatabaseOptions(
+        version: 3,
+        onCreate: _onCreate,
+        onUpgrade: _onUpgrade,
+      ));
     } else if (defaultTargetPlatform == TargetPlatform.windows || 
                defaultTargetPlatform == TargetPlatform.linux || 
                defaultTargetPlatform == TargetPlatform.macOS) {
@@ -181,9 +187,18 @@ class DatabaseHelper {
     }
     final where = conds.isNotEmpty ? conds.join(' AND ') : null;
     final maps = await db.query('appointments',
-        where: where, whereArgs: args.isNotEmpty ? args : null,
-        orderBy: 'date ASC, queue_position ASC');
-    return maps.map((m) => Appointment.fromMap(m)).toList();
+        where: where, whereArgs: args.isNotEmpty ? args : null);
+    
+    final appointments = maps.map((m) => Appointment.fromMap(m)).toList();
+    
+    // Sort by time slot index to ensure chronological order
+    appointments.sort((a, b) {
+      int idxA = TimeSlots.all.indexOf(a.timeSlot);
+      int idxB = TimeSlots.all.indexOf(b.timeSlot);
+      return idxA.compareTo(idxB);
+    });
+    
+    return appointments;
   }
 
   Future<Map<String, int>> getStatusCounts() async {
@@ -198,9 +213,18 @@ class DatabaseHelper {
     final db = await database;
     final maps = await db.query('appointments',
         where: 'date = ? AND status != ?',
-        whereArgs: [today, AppointmentStatus.cancelled],
-        orderBy: 'queue_position ASC');
-    return maps.map((m) => Appointment.fromMap(m)).toList();
+        whereArgs: [today, AppointmentStatus.cancelled]);
+        
+    final appointments = maps.map((m) => Appointment.fromMap(m)).toList();
+    
+    // Sort by time slot index to ensure chronological order
+    appointments.sort((a, b) {
+      int idxA = TimeSlots.all.indexOf(a.timeSlot);
+      int idxB = TimeSlots.all.indexOf(b.timeSlot);
+      return idxA.compareTo(idxB);
+    });
+    
+    return appointments;
   }
 
   // ─── UPDATE ─────────────────────────────────────────────
