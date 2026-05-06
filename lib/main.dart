@@ -12,6 +12,8 @@ import 'screens/appointment_list_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
 import 'screens/search_filter_screen.dart';
 import 'screens/login_screen.dart';
+import 'database/sync_service.dart';
+import 'widgets/connectivity_banner.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,6 +31,11 @@ class SmartAppointmentApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AppointmentProvider()),
         ChangeNotifierProvider(create: (_) => QueueProvider()),
         ChangeNotifierProvider(create: (_) => AdminProvider()),
+        ChangeNotifierProvider(create: (_) {
+          final syncService = SyncService();
+          syncService.initialize();
+          return syncService;
+        }),
       ],
       child: MaterialApp(
         title: 'Smart Appointment',
@@ -99,9 +106,16 @@ class _MainNavigationState extends State<MainNavigation> {
     }
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: screens,
+      body: Column(
+        children: [
+          const ConnectivityBanner(),
+          Expanded(
+            child: IndexedStack(
+              index: _currentIndex,
+              children: screens,
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(

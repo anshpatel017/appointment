@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../database/sync_service.dart';
 import '../utils/constants.dart';
 
@@ -7,8 +8,16 @@ class ConnectivityBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // This will be used with a Consumer in the parent
-    return const SizedBox.shrink();
+    return Consumer<SyncService>(
+      builder: (context, syncService, _) {
+        return buildBanner(
+          isOnline: syncService.isOnline,
+          pendingCount: syncService.pendingCount,
+          isSyncing: syncService.isSyncing,
+          onSyncTap: () => syncService.syncPendingAppointments(),
+        );
+      },
+    );
   }
 
   /// Build the actual banner content based on sync state

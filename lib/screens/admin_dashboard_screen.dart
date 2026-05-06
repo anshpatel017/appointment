@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../providers/admin_provider.dart';
 import '../providers/queue_provider.dart';
 import '../providers/auth_provider.dart';
+import '../database/sync_service.dart';
+import '../widgets/connectivity_banner.dart';
 import '../utils/constants.dart';
 import '../widgets/appointment_card.dart';
 
@@ -20,6 +22,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       appBar: AppBar(
         title: const Text('Admin Dashboard', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
+          SyncStatusIcon(syncService: context.read<SyncService>()),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () {
@@ -183,7 +186,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             ? 'Accept this appointment?' 
                             : 'Complete this appointment?',
                         () async {
-                          await admin.markCompleted(todayQueue[i].id);
+                          if (todayQueue[i].status == AppointmentStatus.scheduled) {
+                            await admin.markInProgress(todayQueue[i].id);
+                          } else {
+                            await admin.markCompleted(todayQueue[i].id);
+                          }
                           if (context.mounted) context.read<QueueProvider>().loadTodayQueue();
                         },
                       ),

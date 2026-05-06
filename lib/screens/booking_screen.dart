@@ -5,6 +5,8 @@ import '../providers/appointment_provider.dart';
 import '../providers/queue_provider.dart';
 import '../providers/admin_provider.dart';
 import '../providers/auth_provider.dart';
+import '../database/sync_service.dart';
+import '../widgets/connectivity_banner.dart';
 import '../utils/constants.dart';
 import '../widgets/time_slot_picker.dart';
 
@@ -206,6 +208,7 @@ class _BookingScreenState extends State<BookingScreen> {
       appBar: AppBar(
         title: const Text('Book Appointment', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
+          SyncStatusIcon(syncService: context.read<SyncService>()),
           IconButton(
             icon: const Icon(Icons.logout_rounded, color: AppColors.cancelled),
             onPressed: () => context.read<AuthProvider>().logout(),
