@@ -34,11 +34,12 @@ class _BookingScreenState extends State<BookingScreen> {
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate ?? now,
-      firstDate: now,
-      lastDate: now.add(const Duration(days: 90)),
+      initialDate: _selectedDate ?? today,
+      firstDate: today,
+      lastDate: today.add(const Duration(days: 90)),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -92,6 +93,7 @@ class _BookingScreenState extends State<BookingScreen> {
       if (mounted) {
         context.read<QueueProvider>().loadTodayQueue();
         context.read<AdminProvider>().loadDashboard();
+        context.read<SyncService>().refreshPendingCount();
       }
       _showSuccessDialog(result['appointment']);
     } else {

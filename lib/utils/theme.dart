@@ -71,19 +71,20 @@ class AppTheme {
         ),
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.scaffoldBg,
+        backgroundColor: Colors.transparent,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false, // Image shows left-aligned or standard placement
       ),
       cardTheme: CardThemeData(
         color: AppColors.cardBg,
-        elevation: 0,
+        elevation: 2,
+        shadowColor: Colors.black.withAlpha(10),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.divider, width: 1),
+          borderRadius: BorderRadius.circular(20), // More rounded like the image
+          side: BorderSide(color: AppColors.primary.withAlpha(10), width: 1),
         ),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(

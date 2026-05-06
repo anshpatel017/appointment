@@ -44,7 +44,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
           final stats = admin.statusCounts;
           final total = admin.totalCount;
-          final todayQueue = admin.todayQueue;
+          // Filter to show pending/in-progress appointments first, from all dates
+          final pendingQueue = admin.allAppointments.where((a) => 
+            a.status == AppointmentStatus.scheduled || a.status == AppointmentStatus.inProgress
+          ).toList();
 
           return SingleChildScrollView(
             padding: const EdgeInsets.only(bottom: 24),
@@ -109,7 +112,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ),
 
                 // Move queue button
-                if (todayQueue.isNotEmpty)
+                if (pendingQueue.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: SizedBox(
@@ -143,20 +146,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                 const SizedBox(height: 16),
 
-                // Today's queue
+                // Pending queue
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
                     children: [
-                      const Text("Today's Queue", style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
+                      const Text("Pending Appointments", style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
                       const Spacer(),
-                      Text('${todayQueue.length} appointments', style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                      Text('${pendingQueue.length} appointments', style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
                     ],
                   ),
                 ),
                 const SizedBox(height: 8),
 
-                if (todayQueue.isEmpty)
+                if (pendingQueue.isEmpty)
                   Container(
                     margin: const EdgeInsets.all(16),
                     padding: const EdgeInsets.all(32),
@@ -170,37 +173,43 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         children: [
                           Icon(Icons.inbox_rounded, color: AppColors.textMuted, size: 40),
                           SizedBox(height: 12),
-                          Text('No appointments today', style: TextStyle(color: AppColors.textMuted, fontSize: 15)),
+                          Text('No pending appointments', style: TextStyle(color: AppColors.textMuted, fontSize: 15)),
                         ],
                       ),
                     ),
                   )
                 else
                   ...List.generate(
-                    todayQueue.length,
+                    pendingQueue.length,
                     (i) => AppointmentCard(
-                      appointment: todayQueue[i],
+                      appointment: pendingQueue[i],
                       showActions: true,
                       onComplete: () => _confirmAction(
-                        todayQueue[i].status == AppointmentStatus.scheduled 
+                        pendingQueue[i].status == AppointmentStatus.scheduled 
                             ? 'Accept this appointment?' 
                             : 'Complete this appointment?',
                         () async {
-                          if (todayQueue[i].status == AppointmentStatus.scheduled) {
-                            await admin.markInProgress(todayQueue[i].id);
+                          if (pendingQueue[i].status == AppointmentStatus.scheduled) {
+                            await admin.markInProgress(pendingQueue[i].id);
                           } else {
-                            await admin.markCompleted(todayQueue[i].id);
+                            await admin.markCompleted(pendingQueue[i].id);
                           }
-                          if (context.mounted) context.read<QueueProvider>().loadTodayQueue();
+                          if (context.mounted) {
+                            context.read<QueueProvider>().loadTodayQueue();
+                            context.read<SyncService>().refreshPendingCount();
+                          }
                         },
                       ),
                       onCancel: () => _confirmAction(
-                        todayQueue[i].status == AppointmentStatus.scheduled 
+                        pendingQueue[i].status == AppointmentStatus.scheduled 
                             ? 'Reject this appointment?' 
                             : 'Cancel this appointment?',
                         () async {
-                          await admin.cancelAppointment(todayQueue[i].id);
-                          if (context.mounted) context.read<QueueProvider>().loadTodayQueue();
+                          await admin.cancelAppointment(pendingQueue[i].id);
+                          if (context.mounted) {
+                            context.read<QueueProvider>().loadTodayQueue();
+                            context.read<SyncService>().refreshPendingCount();
+                          }
                         },
                       ),
                     ),

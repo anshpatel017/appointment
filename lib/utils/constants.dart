@@ -3,20 +3,20 @@ import 'package:flutter/material.dart';
 // ─── Service Types ───────────────────────────────────────────────────────────
 class ServiceTypes {
   static const List<String> all = [
-    'General Checkup',
-    'Dental',
-    'Eye Examination',
-    'Haircut & Styling',
-    'Consultation',
-    'Document Verification',
-    'Admission Inquiry',
+    'Regular Checkup',
+    'Headache',
+    'Fever & Cold',
+    'Body Pain',
+    'Stomach Issue',
+    'Skin Consultation',
+    'Emergency',
     'Other',
   ];
 }
 
 // ─── Time Slots ──────────────────────────────────────────────────────────────
 class TimeSlots {
-  static const int maxAppointmentsPerSlot = 3;
+  static const int maxAppointmentsPerSlot = 1;
   static const int avgServiceDurationMinutes = 20;
 
   static const List<String> all = [
@@ -53,19 +53,19 @@ class AppointmentStatus {
 
 // ─── App Colors ──────────────────────────────────────────────────────────────
 class AppColors {
-  // Primary palette
-  static const Color primary = Color(0xFF6C63FF);
-  static const Color primaryLight = Color(0xFF9D97FF);
-  static const Color primaryDark = Color(0xFF4A42DB);
+  // Primary palette (Teal Medical Theme)
+  static const Color primary = Color(0xFF26A69A); // Vibrant Teal
+  static const Color primaryLight = Color(0xFFB2DFDB);
+  static const Color primaryDark = Color(0xFF00796B);
 
   // Accent
-  static const Color accent = Color(0xFF00D9A6);
-  static const Color accentLight = Color(0xFF5EFFD4);
+  static const Color accent = Color(0xFF4DB6AC);
+  static const Color accentLight = Color(0xFFE0F2F1);
 
   // Background
-  static const Color scaffoldBg = Color(0xFFF4F6F9); // Light grayish white
+  static const Color scaffoldBg = Color(0xFFF5F7F8); // Very light grey
   static const Color cardBg = Color(0xFFFFFFFF); // Pure white
-  static const Color surfaceBg = Color(0xFFF9FAFC); // Very light gray for surfaces
+  static const Color surfaceBg = Color(0xFFF0F4F4); // Light teal tint grey
 
   // Status colors
   static const Color scheduled = Color(0xFF3B82F6); // Brighter blue

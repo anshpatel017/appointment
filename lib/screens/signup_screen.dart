@@ -15,7 +15,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  String _selectedRole = 'Patient';
+  String _selectedRole = 'User';
   bool _obscurePassword = true;
 
   @override
@@ -107,19 +107,19 @@ class _SignupScreenState extends State<SignupScreen> {
                     children: [
                       Expanded(
                         child: _RoleCard(
-                          title: 'Patient',
+                          title: 'User',
                           icon: Icons.person_rounded,
-                          isSelected: _selectedRole == 'Patient',
-                          onTap: () => setState(() => _selectedRole = 'Patient'),
+                          isSelected: _selectedRole == 'User',
+                          onTap: () => setState(() => _selectedRole = 'User'),
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: _RoleCard(
-                          title: 'Doctor',
-                          icon: Icons.medical_services_rounded,
-                          isSelected: _selectedRole == 'Doctor',
-                          onTap: () => setState(() => _selectedRole = 'Doctor'),
+                          title: 'Admin',
+                          icon: Icons.admin_panel_settings_rounded,
+                          isSelected: _selectedRole == 'Admin',
+                          onTap: () => setState(() => _selectedRole = 'Admin'),
                         ),
                       ),
                     ],

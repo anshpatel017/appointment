@@ -77,11 +77,33 @@ class _MainNavigationState extends State<MainNavigation> {
     super.initState();
     // Load initial data
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final syncService = context.read<SyncService>();
       context.read<AppointmentProvider>().loadAppointments();
       context.read<QueueProvider>().loadTodayQueue();
       if (context.read<AuthProvider>().isDoctor) {
         context.read<AdminProvider>().loadDashboard();
       }
+
+      // Listen for sync results to show automatic popup
+      syncService.syncResultStream.listen((message) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.cloud_done_rounded, color: AppColors.completed, size: 20),
+                  const SizedBox(width: 12),
+                  Text(message),
+                ],
+              ),
+              backgroundColor: AppColors.surfaceBg,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+      });
     });
   }
 

@@ -11,7 +11,7 @@ class AuthProvider extends ChangeNotifier {
   AppUser? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _currentUser != null;
-  bool get isDoctor => _currentUser?.role == 'Doctor';
+  bool get isDoctor => _currentUser?.role == 'Admin' || _currentUser?.role == 'Doctor';
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     _isLoading = true;

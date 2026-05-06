@@ -11,6 +11,10 @@ class SyncService extends ChangeNotifier {
   bool _isOnline = true;
   int _pendingCount = 0;
   bool _isSyncing = false;
+  
+  // Stream to notify UI of sync results
+  final _syncResultController = StreamController<String>.broadcast();
+  Stream<String> get syncResultStream => _syncResultController.stream;
 
   bool get isOnline => _isOnline;
   int get pendingCount => _pendingCount;
@@ -58,15 +62,18 @@ class SyncService extends ChangeNotifier {
 
       // Mark all as synced (simulated backend sync)
       await _dbHelper.markAllAsSynced();
+      int syncedCount = unsynced.length;
       _pendingCount = 0;
       _isSyncing = false;
       notifyListeners();
 
-      debugPrint('SyncService: Synced ${unsynced.length} appointments');
-      return unsynced.length;
+      _syncResultController.add('Successfully synced $syncedCount appointments');
+      debugPrint('SyncService: Synced $syncedCount appointments');
+      return syncedCount;
     } catch (e) {
       _isSyncing = false;
       notifyListeners();
+      _syncResultController.add('Sync failed: Please check your connection');
       debugPrint('SyncService: Sync failed - $e');
       return 0;
     }
@@ -82,6 +89,7 @@ class SyncService extends ChangeNotifier {
   @override
   void dispose() {
     _subscription?.cancel();
+    _syncResultController.close();
     super.dispose();
   }
 }
